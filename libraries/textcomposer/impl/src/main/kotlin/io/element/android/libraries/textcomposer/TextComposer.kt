@@ -9,6 +9,7 @@
 package io.element.android.libraries.textcomposer
 
 import android.content.res.Configuration
+import android.graphics.Color
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,11 +24,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -160,81 +164,14 @@ fun TextComposer(
     } else {
         stringResource(id = R.string.rich_text_editor_composer_placeholder)
     }
-    val textInput: @Composable () -> Unit = when (state) {
-        is TextEditorState.Rich -> {
-            val coroutineScope = rememberCoroutineScope()
-            val view = LocalView.current
-            remember(state.richTextEditorState, composerMode, onResetComposerMode, onError) {
-                @Composable {
-                    TextInputBox(
-                        modifier = Modifier
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                            ) {
-                                coroutineScope.launch {
-                                    state.requestFocus()
-                                    view.showKeyboard()
-                                }
-                            }
-                            .semantics {
-                                hideFromAccessibility()
-                            },
-                        composerMode = composerMode,
-                        onResetComposerMode = onResetComposerMode,
-                        isTextEmpty = state.richTextEditorState.messageHtml.isEmpty(),
-                    ) {
-                        RichTextEditor(
-                            state = state.richTextEditorState,
-                            placeholder = placeholder,
-                            registerStateUpdates = true,
-                            modifier = Modifier
-                                .padding(top = 4.dp, bottom = 6.dp)
-                                .fillMaxWidth(),
-                            style = ElementRichTextEditorStyle.composerStyle(hasFocus = state.richTextEditorState.hasFocus),
-                            resolveMentionDisplay = resolveMentionDisplay,
-                            resolveRoomMentionDisplay = resolveAtRoomMentionDisplay,
-                            onError = onError,
-                            onRichContentSelected = onSelectRichContent,
-                            onTyping = onTyping,
-                        )
-                    }
-                }
-            }
-        }
-        is TextEditorState.Markdown -> {
-            @Composable {
-                val style = ElementRichTextEditorStyle.composerStyle(hasFocus = state.hasFocus())
-                TextInputBox(
-                    composerMode = composerMode,
-                    onResetComposerMode = onResetComposerMode,
-                    isTextEmpty = state.state.text.value().isEmpty(),
-                ) {
-                    MarkdownTextInput(
-                        state = state.state,
-                        placeholder = placeholder,
-                        placeholderColor = ElementTheme.colors.textSecondary,
-                        onTyping = onTyping,
-                        onReceiveSuggestion = onReceiveSuggestion,
-                        richTextEditorStyle = style,
-                        onSelectRichContent = onSelectRichContent,
-                    )
-                }
-            }
-        }
-    }
-
-    val canSendTextMessage = markdown.isNotBlank() || composerMode is MessageComposerMode.Attachment
-
-    val textFormattingOptions: @Composable (() -> Unit)? = (state as? TextEditorState.Rich)?.let {
-        @Composable { TextFormatting(state = it.richTextEditorState) }
-    }
 
     val hapticFeedback = LocalHapticFeedback.current
 
     fun performHapticFeedback() {
         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
     }
+
+    val canSendTextMessage = markdown.isNotBlank() || composerMode is MessageComposerMode.Attachment
 
     @Composable
     fun rememberEndButtonParams() = remember(
@@ -321,6 +258,76 @@ fun TextComposer(
         }
     }
 
+    val textInput: @Composable () -> Unit = when (state) {
+        is TextEditorState.Rich -> {
+            val coroutineScope = rememberCoroutineScope()
+            val view = LocalView.current
+            remember(state.richTextEditorState, composerMode, onResetComposerMode, onError) {
+                @Composable {
+                    val endButtonParams = rememberEndButtonParams()
+                    TextInputBox(
+                        modifier = Modifier
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) {
+                                coroutineScope.launch {
+                                    state.requestFocus()
+                                    view.showKeyboard()
+                                }
+                            }
+                            .semantics {
+                                hideFromAccessibility()
+                            },
+                        composerMode = composerMode,
+                        onResetComposerMode = onResetComposerMode,
+                        isTextEmpty = state.richTextEditorState.messageHtml.isEmpty(),
+                    ) {
+                        RichTextEditor(
+                            state = state.richTextEditorState,
+                            placeholder = placeholder,
+                            registerStateUpdates = true,
+                            modifier = Modifier
+                                .padding(top = 4.dp, bottom = 6.dp)
+                                .fillMaxWidth(),
+                            style = ElementRichTextEditorStyle.composerStyle(hasFocus = state.richTextEditorState.hasFocus),
+                            resolveMentionDisplay = resolveMentionDisplay,
+                            resolveRoomMentionDisplay = resolveAtRoomMentionDisplay,
+                            onError = onError,
+                            onRichContentSelected = onSelectRichContent,
+                            onTyping = onTyping,
+                        )
+                    }
+                }
+            }
+        }
+        is TextEditorState.Markdown -> {
+            @Composable {
+                val style = ElementRichTextEditorStyle.composerStyle(hasFocus = state.hasFocus())
+                val endButtonParams = rememberEndButtonParams()
+                TextInputBox(
+                    composerMode = composerMode,
+                    onResetComposerMode = onResetComposerMode,
+                    isTextEmpty = state.state.text.value().isEmpty(),
+                ) {
+                    MarkdownTextInput(
+                        state = state.state,
+                        placeholder = placeholder,
+                        placeholderColor = ElementTheme.colors.textSecondary,
+                        onTyping = onTyping,
+                        onReceiveSuggestion = onReceiveSuggestion,
+                        richTextEditorStyle = style,
+                        onSelectRichContent = onSelectRichContent,
+                    )
+                }
+            }
+        }
+    }
+
+    val textFormattingOptions: @Composable (() -> Unit)? = (state as? TextEditorState.Rich)?.let {
+        @Composable { TextFormatting(state = it.richTextEditorState) }
+    }
+
     @Composable
     fun rememberEndButtonParamsFormatting() = remember(composerMode.isEditing, canSendTextMessage) {
         if (composerMode.isEditing) {
@@ -397,19 +404,25 @@ fun TextComposer(
         )
     } else {
         val endButtonParams = rememberEndButtonParams()
-        StandardLayout(
-            composerMode = composerMode,
-            voiceMessageState = voiceMessageState,
-            isRoomEncrypted = state.isRoomEncrypted,
-            modifier = layoutModifier,
-            textInput = textInput,
-            endButtonParams = endButtonParams,
-            voiceRecording = voiceRecording,
-            onAddAttachment = onAddAttachment,
-            onDeleteVoiceMessage = onDeleteVoiceMessage,
-            onVoiceRecorderEvent = onVoiceRecorderEvent,
-            onResetComposerMode = onResetComposerMode,
-        )
+        Box(
+            Modifier
+                .padding(bottom = 12.dp)
+                .padding(horizontal = 12.dp)
+        ){
+            StandardLayout(
+                composerMode = composerMode,
+                voiceMessageState = voiceMessageState,
+                isRoomEncrypted = state.isRoomEncrypted,
+                modifier = layoutModifier,
+                textInput = textInput,
+                endButtonParams = endButtonParams,
+                voiceRecording = voiceRecording,
+                onAddAttachment = onAddAttachment,
+                onDeleteVoiceMessage = onDeleteVoiceMessage,
+                onVoiceRecorderEvent = onVoiceRecorderEvent,
+                onResetComposerMode = onResetComposerMode,
+            )
+        }
     }
 
     SoftKeyboardEffect(composerMode, onRequestFocus) {
@@ -448,7 +461,206 @@ private data class EndButtonParams(
 )
 
 @Composable
+private fun StandardLayoutOld1(
+    composerMode: MessageComposerMode,
+    voiceMessageState: VoiceMessageState,
+    isRoomEncrypted: Boolean?,
+    textInput: @Composable () -> Unit,
+    voiceRecording: @Composable () -> Unit,
+    endButtonParams: EndButtonParams,
+    onAddAttachment: () -> Unit,
+    onDeleteVoiceMessage: () -> Unit,
+    onVoiceRecorderEvent: (VoiceMessageRecorderEvent) -> Unit,
+    onResetComposerMode: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        if (isRoomEncrypted == false) {
+            Spacer(Modifier.height(16.dp))
+            NotEncryptedBadge()
+            Spacer(Modifier.height(4.dp))
+        }
+        Row(verticalAlignment = Alignment.Bottom) {
+
+            Box(
+                modifier = Modifier
+                    .padding(bottom = 8.dp, top = 8.dp)
+                    .weight(1f)
+            ) {
+                val movableVoiceRecording = remember { movableContentOf { voiceRecording() } }
+                if (voiceMessageState is VoiceMessageState.Idle) {
+                    textInput()
+                } else if (composerMode is MessageComposerMode.Special) {
+                    /*
+                    TextInputBox(
+                        composerMode = composerMode,
+                        onResetComposerMode = onResetComposerMode,
+                        isTextEmpty = true,
+                        voiceMessageState = voiceMessageState,
+                        onAddAttachment = onAddAttachment,
+                        onDeleteVoiceMessage = onDeleteVoiceMessage,
+                        onVoiceRecorderEvent = onVoiceRecorderEvent,
+                        endButtonParams = endButtonParams
+                    ) {
+                        movableVoiceRecording()
+                    }
+                     */
+                } else {
+                    movableVoiceRecording()
+                    /*
+                    Box(Modifier.size(40.dp)){
+                        movableVoiceRecording()
+                    }
+
+                     */
+                }
+            }
+
+        }
+    }
+}
+
+@Composable
 private fun StandardLayout(
+    composerMode: MessageComposerMode,
+    voiceMessageState: VoiceMessageState,
+    isRoomEncrypted: Boolean?,
+    textInput: @Composable () -> Unit,
+    voiceRecording: @Composable () -> Unit,
+    endButtonParams: EndButtonParams,
+    onAddAttachment: () -> Unit,
+    onDeleteVoiceMessage: () -> Unit,
+    onVoiceRecorderEvent: (VoiceMessageRecorderEvent) -> Unit,
+    onResetComposerMode: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val borderColor = ElementTheme.colors.borderDisabled
+    val roundedCorners = textInputRoundedCornerShape(composerMode = composerMode)
+    val buttonSize = 40.dp
+
+    Column(
+        modifier = modifier
+            .border(0.5.dp, borderColor, roundedCorners)
+            .padding(4.dp)
+    ) {
+        if (isRoomEncrypted == false) {
+            Spacer(Modifier.height(16.dp))
+            NotEncryptedBadge()
+            Spacer(Modifier.height(4.dp))
+        }
+        val horizontalSpacing = 4.dp
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(horizontalSpacing)
+        ) {
+            IconButton(
+                modifier = Modifier
+                    .size(buttonSize),
+                onClick = {
+                    if (voiceMessageState is VoiceMessageState.Idle) {
+
+                    } else {
+                        when (voiceMessageState) {
+                            is VoiceMessageState.Preview -> if (!voiceMessageState.isSending) {
+                                onDeleteVoiceMessage()
+                            }
+                            is VoiceMessageState.Recording ->
+                                onVoiceRecorderEvent(VoiceMessageRecorderEvent.Cancel)
+                        }
+                    }
+                },
+            ) {
+                if (voiceMessageState is VoiceMessageState.Idle) {
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .size(30.dp)
+                            .padding(3.dp),
+                        imageVector = CompoundIcons.Reaction(),
+                        contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
+                        tint = ElementTheme.colors.iconPrimary
+                    )
+                } else {
+                    when (voiceMessageState) {
+                        is VoiceMessageState.Preview ->
+                            VoiceMessageDeleteButtonIcon(enabled = !voiceMessageState.isSending)
+                        is VoiceMessageState.Recording ->
+                            VoiceMessageDeleteButtonIcon(enabled = true)
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    //.padding(bottom = 8.dp, top = 8.dp)
+                    .weight(1f)
+            ) {
+                val movableVoiceRecording = remember { movableContentOf { voiceRecording() } }
+                if (voiceMessageState is VoiceMessageState.Idle) {
+                    textInput()
+                } else if (composerMode is MessageComposerMode.Special) {
+                    TextInputBox(
+                        composerMode = composerMode,
+                        onResetComposerMode = onResetComposerMode,
+                        isTextEmpty = true,
+                    ) {
+                        movableVoiceRecording()
+                    }
+                } else {
+                    movableVoiceRecording()
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(horizontalSpacing)){
+                when (composerMode) {
+                    is MessageComposerMode.Attachment -> {
+                        Spacer(modifier = Modifier.width(12.dp))
+                    }
+                    is MessageComposerMode.EditCaption -> {
+                        Spacer(modifier = Modifier.width(19.dp))
+                    }
+                    else -> {
+                        val endPadding = if (voiceMessageState is VoiceMessageState.Idle) 0.dp else 3.dp
+                        // To avoid loosing keyboard focus, the IconButton has to be defined here and has to be always enabled.
+                        if (voiceMessageState is VoiceMessageState.Idle){
+                            IconButton(
+                                modifier = Modifier
+                                    .size(buttonSize),
+                                onClick = { onAddAttachment() },
+                            ) {
+                                Icon(
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .size(30.dp)
+                                        .padding(3.dp),
+                                    imageVector = CompoundIcons.Attachment(),
+                                    contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
+                                    tint = ElementTheme.colors.iconPrimary
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // To avoid loosing keyboard focus, the IconButton has to be defined here and has to be always enabled.
+                val endButtonContentDescription = stringResource(endButtonParams.endButtonContentDescriptionResId)
+                IconButton(
+                    modifier = Modifier
+                        .size(buttonSize)
+                        .clearAndSetSemantics {
+                            contentDescription = endButtonContentDescription
+                            onClick(null, null)
+                        },
+                    onClick = endButtonParams.endButtonClick,
+                    content = endButtonParams.endButtonContent,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StandardLayoutBackup(
     composerMode: MessageComposerMode,
     voiceMessageState: VoiceMessageState,
     isRoomEncrypted: Boolean?,
@@ -634,8 +846,234 @@ private fun TextFormattingLayout(
     }
 }
 
+
+@Composable
+private fun TextInputBoxOld1(
+    composerMode: MessageComposerMode,
+    onResetComposerMode: () -> Unit,
+    isTextEmpty: Boolean,
+    modifier: Modifier = Modifier,
+    endButtonParams: EndButtonParams,
+    voiceMessageState: VoiceMessageState,
+    onVoiceRecorderEvent: (VoiceMessageRecorderEvent) -> Unit,
+    onAddAttachment: () -> Unit,
+    onDeleteVoiceMessage: () -> Unit,
+    textInput: @Composable () -> Unit,
+) {
+    val bgColor = ElementTheme.colors.bgSubtleSecondary
+    val borderColor = ElementTheme.colors.borderDisabled
+    val roundedCorners = textInputRoundedCornerShape(composerMode = composerMode)
+    val buttonSize = 36.dp
+
+    Column(
+        modifier = Modifier
+            .clip(roundedCorners)
+            .border(0.5.dp, borderColor, roundedCorners)
+            .background(color = bgColor)
+            //.requiredHeightIn(min = 42.dp)
+            .fillMaxSize()
+            .then(modifier),
+    ) {
+        if (composerMode is MessageComposerMode.Special) {
+            ComposerModeView(
+                composerMode = composerMode,
+                onResetComposerMode = onResetComposerMode,
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .then(Modifier.testTag(TestTags.textEditor)),
+
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                IconButton(
+                    modifier = Modifier
+                        .size(buttonSize),
+                    onClick = {}
+                ){
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .fillMaxSize()
+                            .background(ElementTheme.colors.iconPrimary)
+                            .padding(3.dp),
+                        imageVector = CompoundIcons.Reaction(),
+                        contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
+                        tint = ElementTheme.colors.iconOnSolidPrimary
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                ){
+                    textInput()
+                    if (isTextEmpty && composerMode.showCaptionCompatibilityWarning()) {
+                        var showBottomSheet by remember { mutableStateOf(false) }
+                        Icon(
+                            modifier = Modifier
+                                .clickable { showBottomSheet = true }
+                                .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+                                .align(Alignment.CenterEnd),
+                            imageVector = CompoundIcons.InfoSolid(),
+                            tint = ElementTheme.colors.iconCriticalPrimary,
+                            contentDescription = stringResource(CommonStrings.a11y_info),
+                        )
+                        if (showBottomSheet) {
+                            CaptionWarningBottomSheet(
+                                onDismiss = { showBottomSheet = false },
+                            )
+                        }
+                    }
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    when (composerMode) {
+                        is MessageComposerMode.Attachment -> {
+                            Spacer(modifier = Modifier.width(12.dp))
+                        }
+                        is MessageComposerMode.EditCaption -> {
+                            Spacer(modifier = Modifier.width(19.dp))
+                        }
+                        else -> {
+                            val endPadding = if (voiceMessageState is VoiceMessageState.Idle) 0.dp else 3.dp
+                            // To avoid loosing keyboard focus, the IconButton has to be defined here and has to be always enabled.
+                            IconButton(
+                                modifier = Modifier
+                                    //.padding(top = 5.dp, bottom = 5.dp, start = 3.dp, end = endPadding)
+                                    .size(buttonSize),
+                                onClick = {
+                                    if (voiceMessageState is VoiceMessageState.Idle) {
+                                        onAddAttachment()
+                                    } else {
+                                        when (voiceMessageState) {
+                                            is VoiceMessageState.Preview -> if (!voiceMessageState.isSending) {
+                                                onDeleteVoiceMessage()
+                                            }
+                                            is VoiceMessageState.Recording ->
+                                                onVoiceRecorderEvent(VoiceMessageRecorderEvent.Cancel)
+                                        }
+                                    }
+                                },
+                            ) {
+                                if (voiceMessageState is VoiceMessageState.Idle) {
+                                    Icon(
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .fillMaxSize()
+                                            .background(ElementTheme.colors.iconPrimary)
+                                            .padding(3.dp),
+                                        imageVector = CompoundIcons.Attachment(),
+                                        contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
+                                        tint = ElementTheme.colors.iconOnSolidPrimary
+                                    )
+                                } else {
+                                    when (voiceMessageState) {
+                                        is VoiceMessageState.Preview ->
+                                            VoiceMessageDeleteButtonIcon(enabled = !voiceMessageState.isSending)
+                                        is VoiceMessageState.Recording ->
+                                            VoiceMessageDeleteButtonIcon(enabled = true)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // To avoid loosing keyboard focus, the IconButton has to be defined here and has to be always enabled.
+                    val endButtonContentDescription = stringResource(endButtonParams.endButtonContentDescriptionResId)
+                    IconButton(
+                        modifier = Modifier
+                            //.padding(bottom = 5.dp, top = 5.dp, end = 6.dp, start = 6.dp)
+                            .size(buttonSize)
+                            .clearAndSetSemantics {
+                                contentDescription = endButtonContentDescription
+                                onClick(null, null)
+                            },
+                        onClick = endButtonParams.endButtonClick,
+                        content = endButtonParams.endButtonContent,
+                    )
+                }
+            }
+
+            /*
+            Box(
+                modifier
+                    .width(10.dp)
+                    .height(10.dp)
+                    .background(color = MaterialTheme.colorScheme.error)
+            )
+
+             */
+        }
+    }
+}
+
 @Composable
 private fun TextInputBox(
+    composerMode: MessageComposerMode,
+    onResetComposerMode: () -> Unit,
+    isTextEmpty: Boolean,
+    modifier: Modifier = Modifier,
+    textInput: @Composable () -> Unit,
+) {
+    val bgColor = ElementTheme.colors.bgSubtleSecondary
+
+    Column(
+        modifier = Modifier
+            //.background(color = bgColor)
+            //.requiredHeightIn(min = 42.dp)
+            .fillMaxSize()
+            //.background(MaterialTheme.colorScheme.error)
+            .then(modifier),
+    ) {
+        if (composerMode is MessageComposerMode.Special) {
+            ComposerModeView(
+                composerMode = composerMode,
+                onResetComposerMode = onResetComposerMode,
+            )
+        } else {
+            // Top padding for the message composer box
+            Spacer(Modifier.height(4.dp))
+        }
+
+        Box(
+            modifier = Modifier
+                //.padding(top = 1.dp, bottom = 4.dp, start = 12.dp, end = 12.dp)
+                .then(Modifier.testTag(TestTags.textEditor)),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            textInput()
+            if (isTextEmpty && composerMode.showCaptionCompatibilityWarning()) {
+                var showBottomSheet by remember { mutableStateOf(false) }
+                Icon(
+                    modifier = Modifier
+                        .clickable { showBottomSheet = true }
+                        .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+                        .align(Alignment.CenterEnd),
+                    imageVector = CompoundIcons.InfoSolid(),
+                    tint = ElementTheme.colors.iconCriticalPrimary,
+                    contentDescription = stringResource(CommonStrings.a11y_info),
+                )
+                if (showBottomSheet) {
+                    CaptionWarningBottomSheet(
+                        onDismiss = { showBottomSheet = false },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TextInputBoxBackup(
     composerMode: MessageComposerMode,
     onResetComposerMode: () -> Unit,
     isTextEmpty: Boolean,
@@ -1027,6 +1465,48 @@ internal fun TextComposerScaledDensityWithReplyPreview() {
                 )
             }
         }
+    }
+}
+
+// Preview to visualise the current layout of StandardLayout with its 3 zones:
+// [attachment button] [text input (weight=1f)] [send button]
+@PreviewsDayNight
+@Composable
+internal fun StandardLayoutPreview() = ElementPreview {
+    Column(Modifier
+        .fillMaxSize(),
+        verticalArrangement = Arrangement.Bottom) {
+        HorizontalDivider()
+        Column(modifier = Modifier.height(70.dp)) {
+            TextComposer(
+                state = aTextEditorStateMarkdown(initialText = "HI! Its a test of out of gay gisha gay fsgasfbghkjfghsfaghaghfskghsfhgksfahgfsahkghsfghsfg", initialFocus = true),
+                voiceMessageState = VoiceMessageState.Idle,
+                composerMode = MessageComposerMode.Normal,
+                onRequestFocus = {},
+                onSendMessage = {},
+                onResetComposerMode = {},
+                onAddAttachment = {},
+                onDismissTextFormatting = {},
+                onVoiceRecorderEvent = {},
+                onVoicePlayerEvent = {},
+                onSendVoiceMessage = {},
+                onDeleteVoiceMessage = {},
+                onError = {},
+                onTyping = {},
+                onReceiveSuggestion = {},
+                resolveMentionDisplay = { _, _ -> TextDisplay.Plain },
+                resolveAtRoomMentionDisplay = { TextDisplay.Plain },
+                onSelectRichContent = null,
+            )
+        }
+
+        HorizontalDivider()
+        Text(
+            text = "Current StandardLayout: 3 separate elements (attachment, text box with bubble bg, send button)",
+            style = ElementTheme.typography.fontBodySmRegular,
+            color = ElementTheme.colors.textSecondary,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+        )
     }
 }
 

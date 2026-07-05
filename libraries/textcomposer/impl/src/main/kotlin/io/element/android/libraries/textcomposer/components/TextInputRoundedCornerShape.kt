@@ -19,8 +19,8 @@ import io.element.android.libraries.textcomposer.model.MessageComposerMode
 internal fun textInputRoundedCornerShape(
     composerMode: MessageComposerMode,
 ): RoundedCornerShape {
-    val roundCornerSmall = 20.dp
-    val roundCornerLarge = 21.dp
+    val roundCornerSmall = 22.dp
+    val roundCornerLarge = 23.dp
 
     val roundedCornerSize = if (composerMode is MessageComposerMode.Special) {
         roundCornerSmall
