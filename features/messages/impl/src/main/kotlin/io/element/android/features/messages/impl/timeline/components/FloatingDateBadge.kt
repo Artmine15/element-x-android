@@ -108,7 +108,6 @@ internal fun BoxScope.FloatingDateBadgeOverlay(
     ) {
         formattedDate?.let { dateText ->
             FloatingDateBadge(
-                modifier = Modifier.padding(8.dp),
                 dateText = dateText,
             )
         }
@@ -127,7 +126,7 @@ internal fun FloatingDateBadge(
         shadowElevation = 4.dp,
     ) {
         Text(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
             text = dateText,
             style = ElementTheme.typography.fontBodyMdMedium,
             color = ElementTheme.colors.textPrimary,
