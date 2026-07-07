@@ -9,6 +9,9 @@
 package io.element.android.features.messages.impl
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
@@ -41,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -54,6 +58,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
@@ -206,6 +211,7 @@ fun MessagesView(
     }
 
     val expandableState = rememberExpandableBottomSheetLayoutState()
+    val bottomPaddingDp = expandableState.bottomContentHeightPx.toDp()
     ExpandableBottomSheetLayout(
         modifier = modifier
             .fillMaxSize()
@@ -295,6 +301,7 @@ fun MessagesView(
                                 state.eventSink(MessagesEvent.HandleAction(TimelineItemAction.Reply, targetEvent))
                             },
                             forceJumpToBottomVisibility = forceJumpToBottomVisibility,
+                            additionalBottomPadding = bottomPaddingDp,
                             onViewAllPinnedMessagesClick = onViewAllPinnedMessagesClick,
                             knockRequestsBannerView = knockRequestsBannerView,
                         )
@@ -475,6 +482,7 @@ private fun MessagesViewContent(
     onCreatePollClick: () -> Unit,
     onViewAllPinnedMessagesClick: () -> Unit,
     forceJumpToBottomVisibility: Boolean,
+    additionalBottomPadding: Dp = 0.dp,
     onSwipeToReply: (TimelineItem.Event) -> Unit,
     modifier: Modifier = Modifier,
     knockRequestsBannerView: @Composable () -> Unit,
@@ -531,6 +539,7 @@ private fun MessagesViewContent(
                 onReadReceiptClick = onReadReceiptClick,
                 isSwipeToReplyRight = state.isSwipeToReplyDirectionRight,
                 forceJumpToBottomVisibility = forceJumpToBottomVisibility,
+                additionalBottomPadding = additionalBottomPadding,
                 nestedScrollConnection = scrollBehavior.nestedScrollConnection,
                 floatingDateTopOffset = pinnedBannerHeightDp,
             )

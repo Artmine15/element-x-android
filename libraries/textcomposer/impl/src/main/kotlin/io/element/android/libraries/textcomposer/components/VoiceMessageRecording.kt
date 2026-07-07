@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -54,7 +55,7 @@ internal fun VoiceMessageRecording(
                 shape = MaterialTheme.shapes.medium,
             )
             .padding(start = 12.dp, end = 20.dp, top = 8.dp, bottom = 8.dp)
-            .heightIn(26.dp),
+            .heightIn(24.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RedRecordingDot()
@@ -72,7 +73,7 @@ internal fun VoiceMessageRecording(
 
         LiveWaveformView(
             modifier = Modifier
-                .height(26.dp)
+                .height(24.dp)
                 .weight(1f),
             levels = levels,
         )

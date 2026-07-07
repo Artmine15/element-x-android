@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,7 +62,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -87,6 +87,7 @@ fun ExpandableBottomSheetLayout(
     LaunchedEffect(animatable.value) {
         if (animatable.isRunning && animatable.value != animatable.targetValue) {
             currentBottomContentHeightPx = animatable.value.roundToInt()
+            state.internalBottomHeightPx = currentBottomContentHeightPx
         }
     }
 
@@ -111,6 +112,7 @@ fun ExpandableBottomSheetLayout(
                                         else -> ExpandableBottomSheetLayoutState.Position.DRAGGING
                                     }
                                     currentBottomContentHeightPx = newHeight
+                                    state.internalBottomHeightPx = newHeight
                                 },
                                 onDragEnd = {
                                     coroutineScope.launch {
@@ -173,6 +175,7 @@ fun ExpandableBottomSheetLayout(
             val isExpanded = state.position == ExpandableBottomSheetLayoutState.Position.EXPANDED
             if (lastMinBottomContentHeightPx != minBottomContentHeightPx && !isExpanded) {
                 currentBottomContentHeightPx = minBottomContentHeightPx
+                state.internalBottomHeightPx = currentBottomContentHeightPx
             }
 
             val measuredBottomContent = bottomContentMeasurables.measure(
@@ -182,15 +185,11 @@ fun ExpandableBottomSheetLayout(
                 )
             )
 
-            var remainingHeight = constraints.maxHeight - currentBottomContentHeightPx
-            if (remainingHeight < 0) {
-                Timber.e("Remaining height is negative: $remainingHeight, resetting to 0")
-                remainingHeight = 0
-            }
-
             val contentPlaceable = contentMeasurables.measure(
-                Constraints.fixed(constraints.maxWidth, remainingHeight)
+                Constraints.fixed(constraints.maxWidth, constraints.maxHeight)
             )
+
+            state.internalBottomHeightPx = max(minBottomContentHeightPx, currentBottomContentHeightPx)
 
             layout(constraints.maxWidth, constraints.maxHeight) {
                 contentPlaceable.place(0, 0)

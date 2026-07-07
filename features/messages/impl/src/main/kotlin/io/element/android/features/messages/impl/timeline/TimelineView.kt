@@ -108,6 +108,7 @@ fun TimelineView(
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
     forceJumpToBottomVisibility: Boolean = false,
+    additionalBottomPadding: Dp = 0.dp,
     nestedScrollConnection: NestedScrollConnection = rememberNestedScrollInteropConnection(),
     floatingDateTopOffset: Dp = 0.dp,
 ) {
@@ -161,7 +162,7 @@ fun TimelineView(
                     .testTag(TestTags.timeline),
                 state = lazyListState,
                 reverseLayout = useReverseLayout,
-                contentPadding = PaddingValues(top = 64.dp, bottom = 8.dp),
+                contentPadding = PaddingValues(top = 64.dp, bottom = 8.dp + additionalBottomPadding),
             ) {
                 items(
                     items = state.timelineItems,
@@ -214,6 +215,7 @@ fun TimelineView(
                 onScrollFinishAt = ::onScrollFinishAt,
                 onJumpToLive = ::onJumpToLive,
                 onFocusEventRender = ::onFocusEventRender,
+                additionalBottomPadding = additionalBottomPadding
             )
 
             if (useReverseLayout) {
@@ -296,6 +298,7 @@ private fun BoxScope.TimelineScrollHelper(
     onScrollFinishAt: (Int) -> Unit,
     onJumpToLive: () -> Unit,
     onFocusEventRender: () -> Unit,
+    additionalBottomPadding: Dp
 ) {
     val coroutineScope = rememberCoroutineScope()
     val isScrollFinished by remember { derivedStateOf { !lazyListState.isScrollInProgress } }
@@ -366,7 +369,7 @@ private fun BoxScope.TimelineScrollHelper(
         isVisible = !canAutoScroll || forceJumpToBottomVisibility || !isLive,
         modifier = Modifier
             .align(Alignment.BottomEnd)
-            .padding(end = 12.dp, bottom = 12.dp),
+            .padding(end = 12.dp, bottom = 12.dp + additionalBottomPadding),
         onClick = { jumpToBottom() },
     )
 }

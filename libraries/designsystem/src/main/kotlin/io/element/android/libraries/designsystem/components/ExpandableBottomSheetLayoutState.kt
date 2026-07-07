@@ -31,11 +31,17 @@ fun rememberExpandableBottomSheetLayoutState(): ExpandableBottomSheetLayoutState
 @Stable
 class ExpandableBottomSheetLayoutState {
     internal var internalPosition: Position by mutableStateOf(Position.COLLAPSED)
+    internal var internalBottomHeightPx: Int by mutableStateOf(0)
 
     /**
      * The current position of the bottom sheet layout.
      */
     val position get() = internalPosition
+
+    /**
+     * The current height of the bottom sheet content in pixels.
+     */
+    val bottomContentHeightPx: Int get() = internalBottomHeightPx
 
     /**
      * The position of the bottom sheet layout.

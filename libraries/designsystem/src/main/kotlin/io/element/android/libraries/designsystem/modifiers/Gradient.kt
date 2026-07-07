@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2025 Element Creations Ltd.
- * Copyright 2025 New Vector Ltd.
+ * Copyright (c) 2026 Element Creations Ltd.
  *
  * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
  * Please see LICENSE files in the repository root for full details.
@@ -16,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import io.element.android.libraries.designsystem.colors.gradientSubtleColors
 import io.element.android.libraries.designsystem.preview.ElementPreview
@@ -33,6 +33,21 @@ fun Modifier.backgroundVerticalGradient(
     return background(
         brush = Brush.verticalGradient(
             colors = gradientSubtleColors(),
+        ),
+    )
+}
+
+@Composable
+fun Modifier.backgroundVerticalGradient(
+    colors: List<Color>,
+    startY: Float = 0.0f,
+    endY: Float = Float.POSITIVE_INFINITY
+    ) : Modifier {
+    return background(
+        brush = Brush.verticalGradient(
+            colors = colors,
+            startY = startY,
+            endY = endY
         ),
     )
 }
