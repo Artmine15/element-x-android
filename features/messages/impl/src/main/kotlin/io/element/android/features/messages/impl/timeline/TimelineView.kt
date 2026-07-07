@@ -366,7 +366,7 @@ private fun BoxScope.TimelineScrollHelper(
         isVisible = !canAutoScroll || forceJumpToBottomVisibility || !isLive,
         modifier = Modifier
             .align(Alignment.BottomEnd)
-            .padding(end = 24.dp, bottom = 12.dp),
+            .padding(end = 12.dp, bottom = 12.dp),
         onClick = { jumpToBottom() },
     )
 }
@@ -387,7 +387,7 @@ private fun JumpToBottomButton(
             onClick = onClick,
             elevation = FloatingActionButtonDefaults.elevation(4.dp, 4.dp, 4.dp, 4.dp),
             shape = CircleShape,
-            modifier = Modifier.size(36.dp),
+            modifier = Modifier.size(46.dp),
             containerColor = ElementTheme.colors.bgSubtleSecondary,
             contentColor = ElementTheme.colors.iconSecondary,
         ) {
