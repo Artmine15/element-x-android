@@ -129,6 +129,7 @@ fun aMessagesState(
         hasUnreadThreads = false,
     ),
     isCurrentlySharingLiveLocationInRoom: Boolean = false,
+    isSwipeToReplyDirectionRight: Boolean = true,
     eventSink: (MessagesEvent) -> Unit = {},
 ) = MessagesState(
     roomId = RoomId("!id:domain"),
@@ -159,6 +160,7 @@ fun aMessagesState(
     successorRoom = successorRoom,
     threads = threads,
     showLiveLocationShareBanner = isCurrentlySharingLiveLocationInRoom,
+    isSwipeToReplyDirectionRight = isSwipeToReplyDirectionRight,
     eventSink = eventSink,
 )
 

@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,25 +23,31 @@ import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Icon
+import kotlin.math.abs
 
 /**
  * A swipe indicator that appears when swiping to reply to a message.
  *
  * @param swipeProgress the progress of the swipe, between 0 and X. When swipeProgress >= 1 the swipe will be detected.
+ * @param isLeftAligned whether the indicator is aligned to the left (start) side of the row.
  * @param modifier the modifier to apply to this Composable root.
  */
 @Composable
 fun RowScope.ReplySwipeIndicator(
     swipeProgress: () -> Float,
+    isLeftAligned: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     Icon(
         modifier = modifier
+            .offset(x = if (isLeftAligned) 0.dp else 24.dp)
             .align(Alignment.CenterVertically)
             .graphicsLayer {
-                translationX = 36.dp.toPx() * swipeProgress().coerceAtMost(1f)
-                alpha = swipeProgress()
-            },
+                val translationXSign = if (isLeftAligned) 1f else -1.25f
+                translationX = 36.dp.toPx() * swipeProgress().coerceAtMost(1f) * translationXSign
+                alpha = abs(swipeProgress())
+            }
+            ,
         contentDescription = null,
         imageVector = CompoundIcons.Reply(),
     )
