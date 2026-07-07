@@ -11,6 +11,7 @@ package io.element.android.libraries.textcomposer
 import android.content.res.Configuration
 import android.graphics.Color
 import android.net.Uri
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -122,6 +123,7 @@ fun TextComposer(
     onSendMessage: () -> Unit,
     onResetComposerMode: () -> Unit,
     onAddAttachment: () -> Unit,
+    onOpenPhotoPicker: () -> Unit,
     onDismissTextFormatting: () -> Unit,
     onVoiceRecorderEvent: (VoiceMessageRecorderEvent) -> Unit,
     onVoicePlayerEvent: (VoiceMessagePlayerEvent) -> Unit,
@@ -418,6 +420,7 @@ fun TextComposer(
                 endButtonParams = endButtonParams,
                 voiceRecording = voiceRecording,
                 onAddAttachment = onAddAttachment,
+                onOpenPhotoPicker = onOpenPhotoPicker,
                 onDeleteVoiceMessage = onDeleteVoiceMessage,
                 onVoiceRecorderEvent = onVoiceRecorderEvent,
                 onResetComposerMode = onResetComposerMode,
@@ -529,6 +532,7 @@ private fun StandardLayout(
     voiceRecording: @Composable () -> Unit,
     endButtonParams: EndButtonParams,
     onAddAttachment: () -> Unit,
+    onOpenPhotoPicker: () -> Unit,
     onDeleteVoiceMessage: () -> Unit,
     onVoiceRecorderEvent: (VoiceMessageRecorderEvent) -> Unit,
     onResetComposerMode: () -> Unit,
@@ -641,6 +645,21 @@ private fun StandardLayout(
                                         .size(30.dp)
                                         .padding(3.dp),
                                     imageVector = CompoundIcons.Attachment(),
+                                    contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
+                                    tint = ElementTheme.colors.iconPrimary
+                                )
+                            }
+                            IconButton(
+                                modifier = Modifier
+                                    .size(buttonSize),
+                                onClick = { onOpenPhotoPicker() },
+                            ) {
+                                Icon(
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .size(30.dp)
+                                        .padding(3.dp),
+                                    imageVector = CompoundIcons.Image(),
                                     contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
                                     tint = ElementTheme.colors.iconPrimary
                                 )
@@ -1456,7 +1475,9 @@ internal fun TextComposerScaledDensityWithReplyPreview() {
                 ),
                 textContent = "Message which are being replied, and which was long enough to be displayed on two lines (only!).",
             )
-            Box(modifier = Modifier.width(480.dp).height(120.dp)) {
+            Box(modifier = Modifier
+                .width(480.dp)
+                .height(120.dp)) {
                 ATextComposer(
                     state = aTextEditorStateMarkdown(initialText = "", initialFocus = true),
                     voiceMessageState = VoiceMessageState.Idle,
@@ -1485,6 +1506,7 @@ internal fun StandardLayoutPreview() = ElementPreview {
                 onSendMessage = {},
                 onResetComposerMode = {},
                 onAddAttachment = {},
+                onOpenPhotoPicker = {},
                 onDismissTextFormatting = {},
                 onVoiceRecorderEvent = {},
                 onVoicePlayerEvent = {},
@@ -1542,6 +1564,7 @@ private fun ATextComposer(
         onSendMessage = {},
         onResetComposerMode = {},
         onAddAttachment = {},
+        onOpenPhotoPicker = {},
         onDismissTextFormatting = {},
         onVoiceRecorderEvent = {},
         onVoicePlayerEvent = {},
