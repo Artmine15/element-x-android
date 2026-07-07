@@ -227,9 +227,9 @@ fun TimelineItemEventRow(
         if (canReply) {
             val state: SwipeableActionsState = rememberSwipeableActionsState(isSwipeRight = isSwipeToReplyRight)
             val offset = state.offset.floatValue
-            val swipeThresholdPx = 40.dp.toPx()
+            val swipeThresholdPx = 26.dp.toPx()
             val thresholdCrossed = abs(offset) > swipeThresholdPx
-            SwipeSensitivity(3f) {
+            SwipeSensitivity(2f) {
                 Box(Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier.matchParentSize(),
