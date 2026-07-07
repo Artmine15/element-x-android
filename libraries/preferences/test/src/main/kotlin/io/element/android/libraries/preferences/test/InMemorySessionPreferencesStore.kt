@@ -31,6 +31,7 @@ class InMemorySessionPreferencesStore(
     private val isSessionVerificationSkipped = MutableStateFlow(isSessionVerificationSkipped)
     private val doesCompressMedia = MutableStateFlow(doesCompressMedia)
     private val videoCompressionPreset = MutableStateFlow(videoCompressionPreset)
+    private val isSwipeToReplyDirectionRight = MutableStateFlow(true)
     var clearCallCount = 0
         private set
 
@@ -83,6 +84,9 @@ class InMemorySessionPreferencesStore(
     override fun getVideoCompressionPreset(): Flow<VideoCompressionPreset> {
         return videoCompressionPreset
     }
+
+    override suspend fun setSwipeToReplyDirection(right: Boolean) = isSwipeToReplyDirectionRight.emit(right)
+    override fun isSwipeToReplyDirectionRight(): Flow<Boolean> = isSwipeToReplyDirectionRight
 
     override suspend fun clear() {
         clearCallCount++

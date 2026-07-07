@@ -47,6 +47,7 @@ class DefaultSessionPreferencesStore(
     private val skipSessionVerification = booleanPreferencesKey("skipSessionVerification")
     private val compressImages = booleanPreferencesKey("compressMedia")
     private val compressMediaPreset = stringPreferencesKey("compressMediaPreset")
+    private val swipeToReplyDirectionKey = booleanPreferencesKey("swipeToReplyDirection")
 
     private val dataStoreFile = storeFile(context, sessionId)
     private val store = PreferenceDataStoreFactory.create(
@@ -93,6 +94,9 @@ class DefaultSessionPreferencesStore(
     override suspend fun setVideoCompressionPreset(preset: VideoCompressionPreset) = update(compressMediaPreset, preset.name)
     override fun getVideoCompressionPreset(): Flow<VideoCompressionPreset> = get(compressMediaPreset) { VideoCompressionPreset.STANDARD.name }
         .map { tryOrNull { VideoCompressionPreset.valueOf(it) } ?: VideoCompressionPreset.STANDARD }
+
+    override suspend fun setSwipeToReplyDirection(right: Boolean) = update(swipeToReplyDirectionKey, right)
+    override fun isSwipeToReplyDirectionRight(): Flow<Boolean> = get(swipeToReplyDirectionKey) { true }
 
     override suspend fun clear() {
         dataStoreFile.safeDelete()

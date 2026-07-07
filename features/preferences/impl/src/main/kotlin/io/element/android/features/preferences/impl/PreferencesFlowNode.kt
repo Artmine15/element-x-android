@@ -28,6 +28,7 @@ import io.element.android.features.preferences.api.PreferencesEntryPoint
 import io.element.android.features.preferences.impl.about.AboutNode
 import io.element.android.features.preferences.impl.advanced.AdvancedSettingsNode
 import io.element.android.features.preferences.impl.analytics.AnalyticsSettingsNode
+import io.element.android.features.preferences.impl.appearance.AppearanceSettingsNode
 import io.element.android.features.preferences.impl.blockedusers.BlockedUsersNode
 import io.element.android.features.preferences.impl.developer.DeveloperSettingsNode
 import io.element.android.features.preferences.impl.labs.LabsNode
@@ -76,6 +77,9 @@ class PreferencesFlowNode(
 
         @Parcelize
         data object AdvancedSettings : NavTarget
+
+        @Parcelize
+        data object AppearanceSettings : NavTarget
 
         @Parcelize
         data object Labs : NavTarget
@@ -157,6 +161,10 @@ class PreferencesFlowNode(
 
                     override fun navigateToAdvancedSettings() {
                         backstack.push(NavTarget.AdvancedSettings)
+                    }
+
+                    override fun navigateToAppearanceSettings() {
+                        backstack.push(NavTarget.AppearanceSettings)
                     }
 
                     override fun navigateToLabs() {
@@ -281,6 +289,9 @@ class PreferencesFlowNode(
             }
             NavTarget.AdvancedSettings -> {
                 createNode<AdvancedSettingsNode>(buildContext)
+            }
+            NavTarget.AppearanceSettings -> {
+                createNode<AppearanceSettingsNode>(buildContext)
             }
             is NavTarget.UserProfile -> {
                 val inputs = EditUserProfileNode.Inputs(navTarget.matrixUser)

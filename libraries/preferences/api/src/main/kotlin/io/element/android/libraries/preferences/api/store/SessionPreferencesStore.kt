@@ -35,5 +35,8 @@ interface SessionPreferencesStore {
     suspend fun setVideoCompressionPreset(preset: VideoCompressionPreset)
     fun getVideoCompressionPreset(): Flow<VideoCompressionPreset>
 
+    suspend fun setSwipeToReplyDirection(right: Boolean)
+    fun isSwipeToReplyDirectionRight(): Flow<Boolean>
+
     suspend fun clear()
 }
