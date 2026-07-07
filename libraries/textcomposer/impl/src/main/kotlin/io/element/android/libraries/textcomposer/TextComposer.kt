@@ -280,7 +280,7 @@ fun TextComposer(
                                 hideFromAccessibility()
                             },
                         composerMode = composerMode,
-                        onResetComposerMode = onResetComposerMode,
+                        //onResetComposerMode = onResetComposerMode,
                         isTextEmpty = state.richTextEditorState.messageHtml.isEmpty(),
                     ) {
                         RichTextEditor(
@@ -307,7 +307,7 @@ fun TextComposer(
                 val endButtonParams = rememberEndButtonParams()
                 TextInputBox(
                     composerMode = composerMode,
-                    onResetComposerMode = onResetComposerMode,
+                    //onResetComposerMode = onResetComposerMode,
                     isTextEmpty = state.state.text.value().isEmpty(),
                 ) {
                     MarkdownTextInput(
@@ -548,6 +548,13 @@ private fun StandardLayout(
             NotEncryptedBadge()
             Spacer(Modifier.height(4.dp))
         }
+        if (composerMode is MessageComposerMode.Special) {
+            ComposerModeView(
+                composerMode = composerMode,
+                onResetComposerMode = onResetComposerMode,
+            )
+        }
+
         val horizontalSpacing = 4.dp
         Row(
             verticalAlignment = Alignment.Bottom,
@@ -601,7 +608,7 @@ private fun StandardLayout(
                 } else if (composerMode is MessageComposerMode.Special) {
                     TextInputBox(
                         composerMode = composerMode,
-                        onResetComposerMode = onResetComposerMode,
+                        //onResetComposerMode = onResetComposerMode,
                         isTextEmpty = true,
                     ) {
                         movableVoiceRecording()
@@ -741,7 +748,7 @@ private fun StandardLayoutBackup(
                 } else if (composerMode is MessageComposerMode.Special) {
                     TextInputBox(
                         composerMode = composerMode,
-                        onResetComposerMode = onResetComposerMode,
+                        //onResetComposerMode = onResetComposerMode,
                         isTextEmpty = true,
                     ) {
                         movableVoiceRecording()
@@ -1019,7 +1026,7 @@ private fun TextInputBoxOld1(
 @Composable
 private fun TextInputBox(
     composerMode: MessageComposerMode,
-    onResetComposerMode: () -> Unit,
+    //onResetComposerMode: () -> Unit,
     isTextEmpty: Boolean,
     modifier: Modifier = Modifier,
     textInput: @Composable () -> Unit,
@@ -1034,16 +1041,8 @@ private fun TextInputBox(
             //.background(MaterialTheme.colorScheme.error)
             .then(modifier),
     ) {
-        if (composerMode is MessageComposerMode.Special) {
-            ComposerModeView(
-                composerMode = composerMode,
-                onResetComposerMode = onResetComposerMode,
-            )
-        } else {
-            // Top padding for the message composer box
-            Spacer(Modifier.height(4.dp))
-        }
-
+        // Top padding for the message composer box
+        Spacer(Modifier.height(4.dp))
         Box(
             modifier = Modifier
                 //.padding(top = 1.dp, bottom = 4.dp, start = 12.dp, end = 12.dp)
