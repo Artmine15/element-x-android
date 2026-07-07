@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -30,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -91,7 +94,7 @@ private fun PinnedMessagesBannerRow(
             .background(color = ElementTheme.colors.bgCanvasDefault)
             .fillMaxWidth()
             .drawBorder(borderColor)
-            .heightIn(min = 64.dp)
+            .heightIn(52.dp)
             .clickable {
                 if (state is PinnedMessagesBannerState.Loaded) {
                     analyticsService.captureInteraction(Interaction.Name.PinnedMessageBannerClick)
@@ -145,7 +148,7 @@ private fun ViewAllButton(
         text = text,
         showProgress = state is PinnedMessagesBannerState.Loading,
         onClick = onViewAllClick,
-        modifier = modifier,
+        modifier = modifier.clip(CircleShape),
     )
 }
 
