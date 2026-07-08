@@ -124,6 +124,7 @@ private fun PinnedMessagesBannerRow(
             modifier = Modifier.weight(1f)
         )
         ViewAllButton(
+            modifier = Modifier.padding(4.dp),
             state = state,
             onViewAllClick = {
                 onViewAllClick()

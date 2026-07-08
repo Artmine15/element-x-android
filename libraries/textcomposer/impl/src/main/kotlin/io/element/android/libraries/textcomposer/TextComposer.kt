@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -128,6 +129,7 @@ fun TextComposer(
     onResetComposerMode: () -> Unit,
     onAddAttachment: () -> Unit,
     onOpenPhotoPicker: () -> Unit,
+    onOpenTextFormatting: () -> Unit,
     onDismissTextFormatting: () -> Unit,
     onVoiceRecorderEvent: (VoiceMessageRecorderEvent) -> Unit,
     onVoicePlayerEvent: (VoiceMessagePlayerEvent) -> Unit,
@@ -178,6 +180,10 @@ fun TextComposer(
     }
 
     val canSendTextMessage = markdown.isNotBlank() || composerMode is MessageComposerMode.Attachment
+    var hasBeenMultiline by remember { mutableStateOf(false) }
+    if (state.lineCount > 1 || markdown.lines().size > 1) hasBeenMultiline = true
+    if (markdown.isEmpty()) hasBeenMultiline = false
+    val isMultiline = hasBeenMultiline
 
     @Composable
     fun rememberEndButtonParams() = remember(
@@ -312,6 +318,7 @@ fun TextComposer(
                 val style = ElementRichTextEditorStyle.composerStyle(hasFocus = state.hasFocus())
                 val endButtonParams = rememberEndButtonParams()
                 TextInputBox(
+                    modifier = if (isMultiline) Modifier else Modifier.fillMaxHeight(),
                     composerMode = composerMode,
                     //onResetComposerMode = onResetComposerMode,
                     isTextEmpty = state.state.text.value().isEmpty(),
@@ -445,15 +452,17 @@ fun TextComposer(
             ){
                 StandardLayout(
                     composerMode = composerMode,
+                    textEditorState = state,
                     voiceMessageState = voiceMessageState,
                     isRoomEncrypted = state.isRoomEncrypted,
                     modifier = layoutModifier,
                     textInput = textInput,
-                    isTextNotEmpty = canSendTextMessage,
+                    isMultiline = isMultiline,
                     endButtonParams = endButtonParams,
                     voiceRecording = voiceRecording,
                     onAddAttachment = onAddAttachment,
                     onOpenPhotoPicker = onOpenPhotoPicker,
+                    onOpenTextFormatting = onOpenTextFormatting,
                     onDeleteVoiceMessage = onDeleteVoiceMessage,
                     onVoiceRecorderEvent = onVoiceRecorderEvent,
                     onResetComposerMode = onResetComposerMode,
@@ -500,30 +509,156 @@ private data class EndButtonParams(
 @Composable
 private fun StandardLayout(
     composerMode: MessageComposerMode,
+    textEditorState: TextEditorState,
     voiceMessageState: VoiceMessageState,
     isRoomEncrypted: Boolean?,
     textInput: @Composable () -> Unit,
-    isTextNotEmpty: Boolean,
+    isMultiline: Boolean,
     voiceRecording: @Composable () -> Unit,
     endButtonParams: EndButtonParams,
     onAddAttachment: () -> Unit,
     onOpenPhotoPicker: () -> Unit,
+    onOpenTextFormatting: () -> Unit,
     onDeleteVoiceMessage: () -> Unit,
     onVoiceRecorderEvent: (VoiceMessageRecorderEvent) -> Unit,
     onResetComposerMode: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val buttonSize = 40.dp
+    val isMultilineLayout = isMultiline &&
+        composerMode !is MessageComposerMode.Attachment && composerMode !is MessageComposerMode.EditCaption &&
+        voiceMessageState is VoiceMessageState.Idle && textEditorState is TextEditorState.Markdown
 
+    val buttonSize = 40.dp
+    val buttonSpacing = 4.dp
+
+    @Composable
+    fun LeftButtons(){
+        IconButton(
+            modifier = Modifier
+                .size(buttonSize),
+            onClick = {
+                if (voiceMessageState is VoiceMessageState.Idle) {
+
+                } else {
+                    when (voiceMessageState) {
+                        is VoiceMessageState.Preview -> if (!voiceMessageState.isSending) {
+                            onDeleteVoiceMessage()
+                        }
+                        is VoiceMessageState.Recording ->
+                            onVoiceRecorderEvent(VoiceMessageRecorderEvent.Cancel)
+                    }
+                }
+            },
+        ) {
+            if (voiceMessageState is VoiceMessageState.Idle) {
+                Icon(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .size(30.dp)
+                        .padding(3.dp),
+                    imageVector = CompoundIcons.Reaction(),
+                    contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
+                    tint = ElementTheme.colors.iconPrimary
+                )
+            } else {
+                when (voiceMessageState) {
+                    is VoiceMessageState.Preview ->
+                        VoiceMessageDeleteButtonIcon(enabled = !voiceMessageState.isSending)
+                    is VoiceMessageState.Recording ->
+                        VoiceMessageDeleteButtonIcon(enabled = true)
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun RightButtons(){
+        Row(horizontalArrangement = Arrangement.spacedBy(buttonSpacing)){
+            when (composerMode) {
+                is MessageComposerMode.Attachment -> {
+                    Spacer(modifier = Modifier.width(12.dp))
+                }
+                is MessageComposerMode.EditCaption -> {
+                    Spacer(modifier = Modifier.width(19.dp))
+                }
+                else -> {
+                    val endPadding = if (voiceMessageState is VoiceMessageState.Idle) 0.dp else 3.dp
+                    // To avoid loosing keyboard focus, the IconButton has to be defined here and has to be always enabled.
+                    if (voiceMessageState is VoiceMessageState.Idle/* && !isTextNotEmpty*/){
+                        IconButton(
+                            modifier = Modifier
+                                .size(buttonSize),
+                            onClick = { onOpenTextFormatting() },
+                        ) {
+                            Icon(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .size(30.dp)
+                                    .padding(3.dp),
+                                imageVector = CompoundIcons.TextFormatting(),
+                                contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
+                                tint = ElementTheme.colors.iconPrimary
+                            )
+                        }
+
+                        IconButton(
+                            modifier = Modifier
+                                .size(buttonSize),
+                            onClick = { onAddAttachment() },
+                        ) {
+                            Icon(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .size(30.dp)
+                                    .padding(3.dp),
+                                imageVector = CompoundIcons.Plus(),
+                                contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
+                                tint = ElementTheme.colors.iconPrimary
+                            )
+                        }
+
+                        IconButton(
+                            modifier = Modifier
+                                .size(buttonSize),
+                            onClick = { onOpenPhotoPicker() },
+                        ) {
+                            Icon(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .size(30.dp)
+                                    .padding(3.dp),
+                                imageVector = CompoundIcons.Image(),
+                                contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
+                                tint = ElementTheme.colors.iconPrimary
+                            )
+                        }
+                    }
+                }
+            }
+
+            // To avoid loosing keyboard focus, the IconButton has to be defined here and has to be always enabled.
+            val endButtonContentDescription = stringResource(endButtonParams.endButtonContentDescriptionResId)
+            IconButton(
+                modifier = Modifier
+                    .size(buttonSize)
+                    .clearAndSetSemantics {
+                        contentDescription = endButtonContentDescription
+                        onClick(null, null)
+                    },
+                onClick = endButtonParams.endButtonClick,
+                content = endButtonParams.endButtonContent,
+            )
+        }
+    }
 
     Column(
         modifier = modifier
             .padding(4.dp)
     ) {
         if (isRoomEncrypted == false) {
-            Spacer(Modifier.height(16.dp))
-            NotEncryptedBadge()
             Spacer(Modifier.height(4.dp))
+            NotEncryptedBadge()
+            //Spacer(Modifier.height(4.dp))
         }
         if (composerMode is MessageComposerMode.Special) {
             ComposerModeView(
@@ -532,95 +667,16 @@ private fun StandardLayout(
             )
         }
 
-        val buttonSpacing = 4.dp
         Row(
+            modifier = if (isMultiline) Modifier.weight(1f, fill = false) else Modifier,
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(buttonSpacing)
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(buttonSpacing)
-            ) {
-                val isVisible = isTextNotEmpty && composerMode !is MessageComposerMode.Attachment && composerMode !is MessageComposerMode.EditCaption
-                AnimatedVisibility(
-                    visible = isVisible
-                ) {
-                    IconButton(
-                        modifier = Modifier
-                            .size(buttonSize),
-                        onClick = { onAddAttachment() },
-                    ) {
-                        Icon(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .size(30.dp)
-                                .padding(3.dp),
-                            imageVector = CompoundIcons.Attachment(),
-                            contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
-                            tint = ElementTheme.colors.iconPrimary
-                        )
-                    }
-                }
-
-                AnimatedVisibility(
-                    visible = isVisible
-                ) {
-                    IconButton(
-                        modifier = Modifier
-                            .size(buttonSize),
-                        onClick = { onOpenPhotoPicker() },
-                    ) {
-                        Icon(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .size(30.dp)
-                                .padding(3.dp),
-                            imageVector = CompoundIcons.Image(),
-                            contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
-                            tint = ElementTheme.colors.iconPrimary
-                        )
-                    }
-                }
-                IconButton(
-                    modifier = Modifier
-                        .size(buttonSize),
-                    onClick = {
-                        if (voiceMessageState is VoiceMessageState.Idle) {
-
-                        } else {
-                            when (voiceMessageState) {
-                                is VoiceMessageState.Preview -> if (!voiceMessageState.isSending) {
-                                    onDeleteVoiceMessage()
-                                }
-                                is VoiceMessageState.Recording ->
-                                    onVoiceRecorderEvent(VoiceMessageRecorderEvent.Cancel)
-                            }
-                        }
-                    },
-                ) {
-                    if (voiceMessageState is VoiceMessageState.Idle) {
-                        Icon(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .size(30.dp)
-                                .padding(3.dp),
-                            imageVector = CompoundIcons.Reaction(),
-                            contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
-                            tint = ElementTheme.colors.iconPrimary
-                        )
-                    } else {
-                        when (voiceMessageState) {
-                            is VoiceMessageState.Preview ->
-                                VoiceMessageDeleteButtonIcon(enabled = !voiceMessageState.isSending)
-                            is VoiceMessageState.Recording ->
-                                VoiceMessageDeleteButtonIcon(enabled = true)
-                        }
-                    }
-                }
-            }
+            if (!isMultilineLayout) LeftButtons()
 
             Box(
                 modifier = Modifier
-                    //.padding(bottom = 8.dp, top = 8.dp)
+                    .padding(horizontal = if(isMultilineLayout) buttonSize else 0.dp)
                     .weight(1f)
             ) {
                 val movableVoiceRecording = remember { movableContentOf { voiceRecording() } }
@@ -639,64 +695,18 @@ private fun StandardLayout(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(buttonSpacing)){
-                when (composerMode) {
-                    is MessageComposerMode.Attachment -> {
-                        Spacer(modifier = Modifier.width(12.dp))
-                    }
-                    is MessageComposerMode.EditCaption -> {
-                        Spacer(modifier = Modifier.width(19.dp))
-                    }
-                    else -> {
-                        val endPadding = if (voiceMessageState is VoiceMessageState.Idle) 0.dp else 3.dp
-                        // To avoid loosing keyboard focus, the IconButton has to be defined here and has to be always enabled.
-                        if (voiceMessageState is VoiceMessageState.Idle && !isTextNotEmpty){
-                            IconButton(
-                                modifier = Modifier
-                                    .size(buttonSize),
-                                onClick = { onAddAttachment() },
-                            ) {
-                                Icon(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .size(30.dp)
-                                        .padding(3.dp),
-                                    imageVector = CompoundIcons.Attachment(),
-                                    contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
-                                    tint = ElementTheme.colors.iconPrimary
-                                )
-                            }
-                            IconButton(
-                                modifier = Modifier
-                                    .size(buttonSize),
-                                onClick = { onOpenPhotoPicker() },
-                            ) {
-                                Icon(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .size(30.dp)
-                                        .padding(3.dp),
-                                    imageVector = CompoundIcons.Image(),
-                                    contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
-                                    tint = ElementTheme.colors.iconPrimary
-                                )
-                            }
-                        }
-                    }
-                }
+            if (!isMultilineLayout) RightButtons()
+        }
 
-                // To avoid loosing keyboard focus, the IconButton has to be defined here and has to be always enabled.
-                val endButtonContentDescription = stringResource(endButtonParams.endButtonContentDescriptionResId)
-                IconButton(
-                    modifier = Modifier
-                        .size(buttonSize)
-                        .clearAndSetSemantics {
-                            contentDescription = endButtonContentDescription
-                            onClick(null, null)
-                        },
-                    onClick = endButtonParams.endButtonClick,
-                    content = endButtonParams.endButtonContent,
-                )
+        if (isMultilineLayout){
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ){
+                LeftButtons()
+                Spacer(Modifier.weight(1f))
+                RightButtons()
             }
         }
     }
@@ -901,10 +911,6 @@ private fun TextInputBox(
 
     Column(
         modifier = Modifier
-            //.background(color = bgColor)
-            //.requiredHeightIn(min = 42.dp)
-            .fillMaxSize()
-            //.background(MaterialTheme.colorScheme.error)
             .then(modifier),
     ) {
         // Top padding for the message composer box
@@ -1354,6 +1360,7 @@ internal fun StandardLayoutPreview() = ElementPreview {
                 onResetComposerMode = {},
                 onAddAttachment = {},
                 onOpenPhotoPicker = {},
+                onOpenTextFormatting = {},
                 onDismissTextFormatting = {},
                 onVoiceRecorderEvent = {},
                 onVoicePlayerEvent = {},
@@ -1412,6 +1419,7 @@ private fun ATextComposer(
         onResetComposerMode = {},
         onAddAttachment = {},
         onOpenPhotoPicker = {},
+        onOpenTextFormatting = {},
         onDismissTextFormatting = {},
         onVoiceRecorderEvent = {},
         onVoicePlayerEvent = {},

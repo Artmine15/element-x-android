@@ -57,6 +57,10 @@ internal fun MessageComposerView(
         state.eventSink(MessageComposerEvent.PickAttachmentSource.FromGallery)
     }
 
+    fun onOpenTextFormatting() {
+        state.eventSink(MessageComposerEvent.ToggleTextFormatting(enabled = true))
+    }
+
     fun onCloseSpecialMode() {
         state.eventSink(MessageComposerEvent.CloseSpecialMode)
     }
@@ -113,6 +117,7 @@ internal fun MessageComposerView(
         onResetComposerMode = ::onCloseSpecialMode,
         onAddAttachment = ::onAddAttachment,
         onOpenPhotoPicker = ::onOpenPhotoPicker,
+        onOpenTextFormatting = ::onOpenTextFormatting,
         onDismissTextFormatting = ::onDismissTextFormatting,
         onVoiceRecorderEvent = onVoiceRecorderEvent,
         onVoicePlayerEvent = onVoicePlayerEvent,

@@ -141,6 +141,7 @@ private fun AttachmentSourcePickerMenu(
             leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Polls())),
             headlineContent = { Text(stringResource(R.string.screen_room_attachment_source_poll)) },
         )
+        /*
         if (enableTextFormatting) {
             ListItem(
                 modifier = Modifier.clickable { state.eventSink(MessageComposerEvent.ToggleTextFormatting(enabled = true)) },
@@ -148,6 +149,7 @@ private fun AttachmentSourcePickerMenu(
                 headlineContent = { Text(stringResource(R.string.screen_room_attachment_text_formatting)) },
             )
         }
+         */
     }
 }
 

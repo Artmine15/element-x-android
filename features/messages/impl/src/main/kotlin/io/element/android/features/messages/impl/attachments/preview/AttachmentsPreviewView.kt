@@ -537,6 +537,7 @@ private fun AttachmentsPreviewBottomActions(
         onResetComposerMode = {},
         onAddAttachment = {},
         onOpenPhotoPicker = {},
+        onOpenTextFormatting = {},
         onDismissTextFormatting = {},
         onVoiceRecorderEvent = {},
         onVoicePlayerEvent = {},
