@@ -8,6 +8,7 @@
 
 package io.element.android.libraries.textcomposer.components.markdown
 
+import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -15,7 +16,9 @@ import android.net.Uri
 import android.text.Editable
 import android.text.InputType
 import android.text.Selection
+import android.view.MotionEvent
 import android.view.View
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -44,6 +47,7 @@ import io.element.android.wysiwyg.compose.RichTextEditorStyle
 import io.element.android.wysiwyg.compose.internal.applyStyleInCompose
 import timber.log.Timber
 
+@SuppressLint("ClickableViewAccessibility")
 @Suppress("ModifierMissing")
 @Composable
 fun MarkdownTextInput(
@@ -54,6 +58,7 @@ fun MarkdownTextInput(
     onReceiveSuggestion: (Suggestion?) -> Unit,
     richTextEditorStyle: RichTextEditorStyle,
     onSelectRichContent: ((Uri) -> Unit)?,
+    onClick: () -> Unit = {}
 ) {
     // Copied from io.element.android.wysiwyg.internal.utils.UriContentListener
     class ReceiveUriContentListener(
@@ -102,6 +107,12 @@ fun MarkdownTextInput(
                 setSelection(state.selection.first.coerceIn(textRange), state.selection.last.coerceIn(textRange))
                 setOnFocusChangeListener { _, hasFocus ->
                     state.hasFocus = hasFocus
+                }
+                setOnTouchListener { _, event ->
+                    if(event.action == MotionEvent.ACTION_UP) {
+                        onClick()
+                    }
+                    false
                 }
                 addTextChangedListener { editable ->
                     onTyping(!editable.isNullOrEmpty())

@@ -45,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -112,6 +113,7 @@ import io.element.android.wysiwyg.compose.RichTextEditor
 import io.element.android.wysiwyg.display.TextDisplay
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import uniffi.wysiwyg_composer.MenuAction
 import kotlin.time.Duration.Companion.seconds
@@ -129,6 +131,9 @@ fun TextComposer(
     onResetComposerMode: () -> Unit,
     onAddAttachment: () -> Unit,
     onOpenPhotoPicker: () -> Unit,
+    onOpenEmojiPanel: () -> Unit,
+    onDismissEmojiPanel: () -> Unit,
+    isShowEmojiPanel: Boolean,
     onOpenTextFormatting: () -> Unit,
     onDismissTextFormatting: () -> Unit,
     onVoiceRecorderEvent: (VoiceMessageRecorderEvent) -> Unit,
@@ -162,7 +167,7 @@ fun TextComposer(
     }
 
     val layoutModifier = modifier
-        .fillMaxSize()
+        .fillMaxWidth()
         .height(IntrinsicSize.Min)
 
     val placeholder = if (composerMode.inThread) {
@@ -270,6 +275,8 @@ fun TextComposer(
         }
     }
 
+    //var isEmojiPanelOpened by remember { mutableStateOf(false) }
+
     val textInput: @Composable () -> Unit = when (state) {
         is TextEditorState.Rich -> {
             val coroutineScope = rememberCoroutineScope()
@@ -317,10 +324,24 @@ fun TextComposer(
             @Composable {
                 val style = ElementRichTextEditorStyle.composerStyle(hasFocus = state.hasFocus())
                 val endButtonParams = rememberEndButtonParams()
+
+                /*
+                val markdownState = state.state
+                LaunchedEffect(markdownState) {
+                    snapshotFlow { markdownState.hasFocus }
+                        .collect { hasFocus ->
+                            if (hasFocus && !isShowEmojiPanel){
+                                //isEmojiPanelOpened = false
+                                //onDismissEmojiPanel()
+                            }
+                        }
+                }
+                 */
+
                 TextInputBox(
                     modifier = if (isMultiline) Modifier else Modifier.fillMaxHeight(),
                     composerMode = composerMode,
-                    //onResetComposerMode = onResetComposerMode,
+
                     isTextEmpty = state.state.text.value().isEmpty(),
                 ) {
                     MarkdownTextInput(
@@ -331,6 +352,7 @@ fun TextComposer(
                         onReceiveSuggestion = onReceiveSuggestion,
                         richTextEditorStyle = style,
                         onSelectRichContent = onSelectRichContent,
+                        onClick = onDismissEmojiPanel
                     )
                 }
             }
@@ -462,6 +484,12 @@ fun TextComposer(
                     voiceRecording = voiceRecording,
                     onAddAttachment = onAddAttachment,
                     onOpenPhotoPicker = onOpenPhotoPicker,
+                    onToggleEmojiPanel = {
+                        if (isShowEmojiPanel) onDismissEmojiPanel() else onOpenEmojiPanel()
+                        //isEmojiPanelOpened = !isEmojiPanelOpened
+                    },
+                    onDismissEmojiPanel = onDismissEmojiPanel,
+                    isShowEmojiPanel = isShowEmojiPanel,
                     onOpenTextFormatting = onOpenTextFormatting,
                     onDeleteVoiceMessage = onDeleteVoiceMessage,
                     onVoiceRecorderEvent = onVoiceRecorderEvent,
@@ -518,6 +546,9 @@ private fun StandardLayout(
     endButtonParams: EndButtonParams,
     onAddAttachment: () -> Unit,
     onOpenPhotoPicker: () -> Unit,
+    onToggleEmojiPanel: () -> Unit,
+    onDismissEmojiPanel: () -> Unit,
+    isShowEmojiPanel: Boolean,
     onOpenTextFormatting: () -> Unit,
     onDeleteVoiceMessage: () -> Unit,
     onVoiceRecorderEvent: (VoiceMessageRecorderEvent) -> Unit,
@@ -538,7 +569,7 @@ private fun StandardLayout(
                 .size(buttonSize),
             onClick = {
                 if (voiceMessageState is VoiceMessageState.Idle) {
-
+                    onToggleEmojiPanel()
                 } else {
                     when (voiceMessageState) {
                         is VoiceMessageState.Preview -> if (!voiceMessageState.isSending) {
@@ -556,7 +587,7 @@ private fun StandardLayout(
                         .clip(CircleShape)
                         .size(30.dp)
                         .padding(3.dp),
-                    imageVector = CompoundIcons.Reaction(),
+                    imageVector = if(!isShowEmojiPanel) CompoundIcons.Reaction() else CompoundIcons.Keyboard(),
                     contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
                     tint = ElementTheme.colors.iconPrimary
                 )
@@ -604,7 +635,10 @@ private fun StandardLayout(
                         IconButton(
                             modifier = Modifier
                                 .size(buttonSize),
-                            onClick = { onAddAttachment() },
+                            onClick = {
+                                onAddAttachment()
+                                onDismissEmojiPanel()
+                                      },
                         ) {
                             Icon(
                                 modifier = Modifier
@@ -620,7 +654,10 @@ private fun StandardLayout(
                         IconButton(
                             modifier = Modifier
                                 .size(buttonSize),
-                            onClick = { onOpenPhotoPicker() },
+                            onClick = {
+                                onOpenPhotoPicker()
+                                onDismissEmojiPanel()
+                                      },
                         ) {
                             Icon(
                                 modifier = Modifier
@@ -708,114 +745,6 @@ private fun StandardLayout(
                 Spacer(Modifier.weight(1f))
                 RightButtons()
             }
-        }
-    }
-}
-
-@Composable
-private fun StandardLayoutBackup(
-    composerMode: MessageComposerMode,
-    voiceMessageState: VoiceMessageState,
-    isRoomEncrypted: Boolean?,
-    textInput: @Composable () -> Unit,
-    voiceRecording: @Composable () -> Unit,
-    endButtonParams: EndButtonParams,
-    onAddAttachment: () -> Unit,
-    onDeleteVoiceMessage: () -> Unit,
-    onVoiceRecorderEvent: (VoiceMessageRecorderEvent) -> Unit,
-    onResetComposerMode: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier) {
-        if (isRoomEncrypted == false) {
-            Spacer(Modifier.height(16.dp))
-            NotEncryptedBadge()
-            Spacer(Modifier.height(4.dp))
-        }
-        Row(verticalAlignment = Alignment.Bottom) {
-            when (composerMode) {
-                is MessageComposerMode.Attachment -> {
-                    Spacer(modifier = Modifier.width(12.dp))
-                }
-                is MessageComposerMode.EditCaption -> {
-                    Spacer(modifier = Modifier.width(19.dp))
-                }
-                else -> {
-                    val endPadding = if (voiceMessageState is VoiceMessageState.Idle) 0.dp else 3.dp
-                    // To avoid loosing keyboard focus, the IconButton has to be defined here and has to be always enabled.
-                    IconButton(
-                        modifier = Modifier
-                            .padding(top = 5.dp, bottom = 5.dp, start = 3.dp, end = endPadding)
-                            .size(48.dp),
-                        onClick = {
-                            if (voiceMessageState is VoiceMessageState.Idle) {
-                                onAddAttachment()
-                            } else {
-                                when (voiceMessageState) {
-                                    is VoiceMessageState.Preview -> if (!voiceMessageState.isSending) {
-                                        onDeleteVoiceMessage()
-                                    }
-                                    is VoiceMessageState.Recording ->
-                                        onVoiceRecorderEvent(VoiceMessageRecorderEvent.Cancel)
-                                }
-                            }
-                        },
-                    ) {
-                        if (voiceMessageState is VoiceMessageState.Idle) {
-                            Icon(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .size(30.dp)
-                                    .background(ElementTheme.colors.iconPrimary)
-                                    .padding(3.dp),
-                                imageVector = CompoundIcons.Plus(),
-                                contentDescription = stringResource(R.string.rich_text_editor_a11y_add_attachment),
-                                tint = ElementTheme.colors.iconOnSolidPrimary
-                            )
-                        } else {
-                            when (voiceMessageState) {
-                                is VoiceMessageState.Preview ->
-                                    VoiceMessageDeleteButtonIcon(enabled = !voiceMessageState.isSending)
-                                is VoiceMessageState.Recording ->
-                                    VoiceMessageDeleteButtonIcon(enabled = true)
-                            }
-                        }
-                    }
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .padding(bottom = 8.dp, top = 8.dp)
-                    .weight(1f)
-            ) {
-                val movableVoiceRecording = remember { movableContentOf { voiceRecording() } }
-                if (voiceMessageState is VoiceMessageState.Idle) {
-                    textInput()
-                } else if (composerMode is MessageComposerMode.Special) {
-                    TextInputBox(
-                        composerMode = composerMode,
-                        //onResetComposerMode = onResetComposerMode,
-                        isTextEmpty = true,
-                    ) {
-                        movableVoiceRecording()
-                    }
-                } else {
-                    movableVoiceRecording()
-                }
-            }
-            // To avoid loosing keyboard focus, the IconButton has to be defined here and has to be always enabled.
-            val endButtonContentDescription = stringResource(endButtonParams.endButtonContentDescriptionResId)
-            IconButton(
-                modifier = Modifier
-                    .padding(bottom = 5.dp, top = 5.dp, end = 6.dp, start = 6.dp)
-                    .size(48.dp)
-                    .clearAndSetSemantics {
-                        contentDescription = endButtonContentDescription
-                        onClick(null, null)
-                    },
-                onClick = endButtonParams.endButtonClick,
-                content = endButtonParams.endButtonContent,
-            )
         }
     }
 }
@@ -918,65 +847,6 @@ private fun TextInputBox(
         Box(
             modifier = Modifier
                 //.padding(top = 1.dp, bottom = 4.dp, start = 12.dp, end = 12.dp)
-                .then(Modifier.testTag(TestTags.textEditor)),
-            contentAlignment = Alignment.CenterStart,
-        ) {
-            textInput()
-            if (isTextEmpty && composerMode.showCaptionCompatibilityWarning()) {
-                var showBottomSheet by remember { mutableStateOf(false) }
-                Icon(
-                    modifier = Modifier
-                        .clickable { showBottomSheet = true }
-                        .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
-                        .align(Alignment.CenterEnd),
-                    imageVector = CompoundIcons.InfoSolid(),
-                    tint = ElementTheme.colors.iconCriticalPrimary,
-                    contentDescription = stringResource(CommonStrings.a11y_info),
-                )
-                if (showBottomSheet) {
-                    CaptionWarningBottomSheet(
-                        onDismiss = { showBottomSheet = false },
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TextInputBoxBackup(
-    composerMode: MessageComposerMode,
-    onResetComposerMode: () -> Unit,
-    isTextEmpty: Boolean,
-    modifier: Modifier = Modifier,
-    textInput: @Composable () -> Unit,
-) {
-    val bgColor = ElementTheme.colors.bgSubtleSecondary
-    val borderColor = ElementTheme.colors.borderDisabled
-    val roundedCorners = textInputRoundedCornerShape(composerMode = composerMode)
-
-    Column(
-        modifier = Modifier
-            .clip(roundedCorners)
-            .border(0.5.dp, borderColor, roundedCorners)
-            .background(color = bgColor)
-            .requiredHeightIn(min = 42.dp)
-            .fillMaxSize()
-            .then(modifier),
-    ) {
-        if (composerMode is MessageComposerMode.Special) {
-            ComposerModeView(
-                composerMode = composerMode,
-                onResetComposerMode = onResetComposerMode,
-            )
-        } else {
-            // Top padding for the message composer box
-            Spacer(Modifier.height(4.dp))
-        }
-
-        Box(
-            modifier = Modifier
-                .padding(top = 1.dp, bottom = 4.dp, start = 12.dp, end = 12.dp)
                 .then(Modifier.testTag(TestTags.textEditor)),
             contentAlignment = Alignment.CenterStart,
         ) {
@@ -1360,6 +1230,9 @@ internal fun StandardLayoutPreview() = ElementPreview {
                 onResetComposerMode = {},
                 onAddAttachment = {},
                 onOpenPhotoPicker = {},
+                onOpenEmojiPanel = {},
+                onDismissEmojiPanel = {},
+                isShowEmojiPanel = false,
                 onOpenTextFormatting = {},
                 onDismissTextFormatting = {},
                 onVoiceRecorderEvent = {},
@@ -1419,6 +1292,9 @@ private fun ATextComposer(
         onResetComposerMode = {},
         onAddAttachment = {},
         onOpenPhotoPicker = {},
+        onOpenEmojiPanel = {},
+        onDismissEmojiPanel = {},
+        isShowEmojiPanel = false,
         onOpenTextFormatting = {},
         onDismissTextFormatting = {},
         onVoiceRecorderEvent = {},

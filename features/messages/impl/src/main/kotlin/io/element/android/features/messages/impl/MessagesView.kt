@@ -26,10 +26,12 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
@@ -88,6 +90,8 @@ import io.element.android.features.messages.impl.timeline.aTimelineState
 import io.element.android.features.messages.impl.timeline.components.CallMenuItem
 import io.element.android.features.messages.impl.timeline.components.customreaction.CustomReactionBottomSheet
 import io.element.android.features.messages.impl.timeline.components.customreaction.CustomReactionEvent
+import io.element.android.features.messages.impl.timeline.components.customreaction.picker.EmojiPicker
+import io.element.android.features.messages.impl.timeline.components.customreaction.picker.anEmojiPickerState
 import io.element.android.features.messages.impl.timeline.components.reactionsummary.ReactionSummaryEvent
 import io.element.android.features.messages.impl.timeline.components.reactionsummary.ReactionSummaryView
 import io.element.android.features.messages.impl.timeline.components.receipt.bottomsheet.ReadReceiptBottomSheet
@@ -132,6 +136,7 @@ import io.element.android.libraries.textcomposer.model.TextEditorState
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.wysiwyg.link.Link
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import timber.log.Timber
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -603,11 +608,31 @@ private fun MessagesViewComposerBottomSheetContents(
                 if (verificationViolation != null) {
                     DisabledComposerView(modifier = Modifier.fillMaxWidth())
                 } else {
-                    MessageComposerView(
-                        state = state.composerState,
-                        voiceMessageState = state.voiceMessageComposerState,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    Column(){
+
+                        MessageComposerView(
+                            state = state.composerState,
+                            voiceMessageState = state.voiceMessageComposerState,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        state.composerState.emojiPickerState?.let { pickerState ->
+                            Box(
+                                modifier = Modifier
+                                    .background(ElementTheme.colors.bgCanvasDefault)
+                                    .requiredHeight(300.dp)
+                            ){
+                                EmojiPicker(
+                                    onSelectEmoji = { emoji ->
+                                        state.composerState.eventSink(MessageComposerEvent.InsertEmoji(emoji.unicode))
+                                    },
+                                    state = pickerState,
+                                    selectedEmojis = persistentSetOf(),
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

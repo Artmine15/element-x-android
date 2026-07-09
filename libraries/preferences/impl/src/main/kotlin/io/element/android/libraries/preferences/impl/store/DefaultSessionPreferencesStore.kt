@@ -48,6 +48,7 @@ class DefaultSessionPreferencesStore(
     private val compressImages = booleanPreferencesKey("compressMedia")
     private val compressMediaPreset = stringPreferencesKey("compressMediaPreset")
     private val swipeToReplyDirectionKey = booleanPreferencesKey("swipeToReplyDirection")
+    private val composerRecentEmojisKey = stringPreferencesKey("composerRecentEmojis")
 
     private val dataStoreFile = storeFile(context, sessionId)
     private val store = PreferenceDataStoreFactory.create(
@@ -97,6 +98,23 @@ class DefaultSessionPreferencesStore(
 
     override suspend fun setSwipeToReplyDirection(right: Boolean) = update(swipeToReplyDirectionKey, right)
     override fun isSwipeToReplyDirectionRight(): Flow<Boolean> = get(swipeToReplyDirectionKey) { true }
+
+    private val RECENT_EMOJI_DELIMITER = "\u001F"
+
+    override suspend fun setComposerRecentEmojis(emojis: List<String>) {
+        update(composerRecentEmojisKey, emojis.joinToString(separator = RECENT_EMOJI_DELIMITER))
+    }
+
+    override fun getComposerRecentEmojis(): Flow<List<String>> {
+        return get(composerRecentEmojisKey) { "" }
+            .map { raw ->
+                if (raw.isEmpty()) {
+                    emptyList()
+                } else {
+                    raw.split(RECENT_EMOJI_DELIMITER).filter { it.isNotEmpty() }
+                }
+            }
+    }
 
     override suspend fun clear() {
         dataStoreFile.safeDelete()

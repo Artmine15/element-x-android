@@ -25,6 +25,8 @@ import io.element.android.features.messages.api.timeline.voicemessages.composer.
 import io.element.android.features.messages.api.timeline.voicemessages.composer.VoiceMessageComposerState
 import io.element.android.features.messages.api.timeline.voicemessages.composer.VoiceMessageComposerStateProvider
 import io.element.android.features.messages.api.timeline.voicemessages.composer.aVoiceMessageComposerState
+import io.element.android.libraries.androidutils.ui.hideKeyboard
+import io.element.android.libraries.androidutils.ui.showKeyboard
 import io.element.android.libraries.designsystem.components.async.AsyncActionView
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
@@ -55,6 +57,16 @@ internal fun MessageComposerView(
 
     fun onOpenPhotoPicker() {
         state.eventSink(MessageComposerEvent.PickAttachmentSource.FromGallery)
+    }
+
+    fun onOpenEmojiPanel() {
+        view.hideKeyboard()
+        state.eventSink(MessageComposerEvent.ToggleEmojiPanel(enabled = true))
+    }
+
+    fun onCloseEmojiPanel() {
+        view.showKeyboard()
+        state.eventSink(MessageComposerEvent.ToggleEmojiPanel(enabled = false))
     }
 
     fun onOpenTextFormatting() {
@@ -117,6 +129,9 @@ internal fun MessageComposerView(
         onResetComposerMode = ::onCloseSpecialMode,
         onAddAttachment = ::onAddAttachment,
         onOpenPhotoPicker = ::onOpenPhotoPicker,
+        onOpenEmojiPanel = ::onOpenEmojiPanel,
+        onDismissEmojiPanel = ::onCloseEmojiPanel,
+        isShowEmojiPanel = state.showEmojiPanel,
         onOpenTextFormatting = ::onOpenTextFormatting,
         onDismissTextFormatting = ::onDismissTextFormatting,
         onVoiceRecorderEvent = onVoiceRecorderEvent,

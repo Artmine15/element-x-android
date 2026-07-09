@@ -39,9 +39,11 @@ import io.element.android.features.messages.impl.draft.ComposerDraftService
 import io.element.android.features.messages.impl.messagecomposer.suggestions.RoomAliasSuggestionsDataSource
 import io.element.android.features.messages.impl.messagecomposer.suggestions.SuggestionsProcessor
 import io.element.android.features.messages.impl.timeline.TimelineController
+import io.element.android.features.messages.impl.timeline.components.customreaction.picker.EmojiPickerPresenter
 import io.element.android.features.messages.impl.utils.TextPillificationHelper
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
@@ -68,6 +70,8 @@ import io.element.android.libraries.mediapickers.api.PickerProvider
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfigProvider
 import io.element.android.libraries.mediaupload.api.MediaSenderFactory
 import io.element.android.libraries.mediaviewer.api.local.LocalMediaFactory
+import io.element.android.libraries.recentemojis.api.EmojibaseProvider
+import kotlinx.collections.immutable.ImmutableList
 import io.element.android.libraries.permissions.api.PermissionsEvent
 import io.element.android.libraries.permissions.api.PermissionsPresenter
 import io.element.android.libraries.preferences.api.store.SessionPreferencesStore
@@ -103,6 +107,7 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import io.element.android.libraries.core.mimetype.MimeTypes.Any as AnyMimeTypes
 
@@ -135,6 +140,8 @@ class MessageComposerPresenter(
     private val notificationConversationService: NotificationConversationService,
     private val slashCommandService: SlashCommandService,
     private val featureFlagService: FeatureFlagService,
+    private val emojibaseProvider: EmojibaseProvider,
+    private val coroutineDispatchers: CoroutineDispatchers,
 ) : Presenter<MessageComposerState> {
     @AssistedFactory
     interface Factory {
@@ -158,6 +165,15 @@ class MessageComposerPresenter(
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var showTextFormatting: Boolean by mutableStateOf(false)
+
+    private var showEmojiPanel: Boolean by mutableStateOf(false)
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal var composerRecentEmojis: ImmutableList<String> by mutableStateOf(persistentListOf())
+
+    companion object {
+        private const val MAX_RECENT_EMOJIS = 20
+    }
 
     @SuppressLint("UnsafeOptInUsageError")
     @Composable
@@ -255,6 +271,26 @@ class MessageComposerPresenter(
             }
         }
 
+        LaunchedEffect(Unit) {
+            sessionPreferencesStore.getComposerRecentEmojis()
+                .collect { emojis ->
+                    composerRecentEmojis = emojis.toImmutableList()
+                }
+        }
+
+        val emojiPickerState = if (showEmojiPanel) {
+            val presenter = remember(emojibaseProvider) {
+                EmojiPickerPresenter(
+                    emojibaseStore = emojibaseProvider.emojibaseStore,
+                    recentEmojis = composerRecentEmojis,
+                    coroutineDispatchers = coroutineDispatchers,
+                )
+            }
+            presenter.present()
+        } else {
+            null
+        }
+
         fun handleEvent(event: MessageComposerEvent) {
             when (event) {
                 MessageComposerEvent.ToggleFullScreenState -> isFullScreen.value = !isFullScreen.value
@@ -265,6 +301,30 @@ class MessageComposerPresenter(
                         }
                     } else {
                         messageComposerContext.composerMode = MessageComposerMode.Normal
+                    }
+                }
+                is MessageComposerEvent.ToggleEmojiPanel -> {
+                    showEmojiPanel = event.enabled
+                }
+                is MessageComposerEvent.InsertEmoji -> {
+                    localCoroutineScope.launch {
+                        if (showTextFormatting) {
+                            val currentMarkdown = richTextEditorState.messageMarkdown
+                            richTextEditorState.setMarkdown(currentMarkdown + event.unicode)
+                            richTextEditorState.requestFocus()
+                        } else {
+                            val text = markdownTextEditorState.text.value().toString()
+                            val cursorPos = markdownTextEditorState.selection.first
+                            val newText = text.substring(0, cursorPos) + event.unicode + text.substring(cursorPos)
+                            markdownTextEditorState.text.update(newText, true)
+                            markdownTextEditorState.selection = IntRange(cursorPos + event.unicode.length, cursorPos + event.unicode.length)
+                            markdownTextEditorState.requestFocusAction()
+                        }
+                        composerRecentEmojis = (listOf(event.unicode) + composerRecentEmojis)
+                            .distinct()
+                            .take(MAX_RECENT_EMOJIS)
+                            .toImmutableList()
+                        sessionPreferencesStore.setComposerRecentEmojis(composerRecentEmojis)
                     }
                 }
                 is MessageComposerEvent.SendMessage -> {
@@ -421,6 +481,8 @@ class MessageComposerPresenter(
             mode = messageComposerContext.composerMode,
             showAttachmentSourcePicker = showAttachmentSourcePicker,
             showTextFormatting = showTextFormatting,
+            showEmojiPanel = showEmojiPanel,
+            emojiPickerState = emojiPickerState,
             canShareLocation = canShareLocation.value,
             suggestions = suggestions.toImmutableList(),
             resolveMentionDisplay = resolveMentionDisplay,

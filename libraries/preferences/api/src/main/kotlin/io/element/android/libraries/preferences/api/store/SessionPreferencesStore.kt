@@ -38,5 +38,8 @@ interface SessionPreferencesStore {
     suspend fun setSwipeToReplyDirection(right: Boolean)
     fun isSwipeToReplyDirectionRight(): Flow<Boolean>
 
+    suspend fun setComposerRecentEmojis(emojis: List<String>)
+    fun getComposerRecentEmojis(): Flow<List<String>>
+
     suspend fun clear()
 }

@@ -9,6 +9,9 @@
 package io.element.android.features.messages.impl.messagecomposer
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import io.element.android.features.messages.impl.timeline.components.customreaction.picker.EmojiPickerState
+import io.element.android.features.messages.impl.timeline.components.customreaction.picker.EmojiPickerStateProvider
+import io.element.android.features.messages.impl.timeline.components.customreaction.picker.anEmojiPickerState
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.textcomposer.mentions.ResolvedSuggestion
 import io.element.android.libraries.textcomposer.model.MessageComposerMode
@@ -30,6 +33,8 @@ fun aMessageComposerState(
     isFullScreen: Boolean = false,
     mode: MessageComposerMode = MessageComposerMode.Normal,
     showTextFormatting: Boolean = false,
+    showEmojiPanel: Boolean = false,
+    emojiPickerState: EmojiPickerState? = anEmojiPickerState(),
     showAttachmentSourcePicker: Boolean = false,
     canShareLocation: Boolean = true,
     suggestions: ImmutableList<ResolvedSuggestion> = persistentListOf(),
@@ -40,6 +45,8 @@ fun aMessageComposerState(
     isFullScreen = isFullScreen,
     mode = mode,
     showTextFormatting = showTextFormatting,
+    showEmojiPanel = showEmojiPanel,
+    emojiPickerState = emojiPickerState,
     showAttachmentSourcePicker = showAttachmentSourcePicker,
     canShareLocation = canShareLocation,
     suggestions = suggestions,

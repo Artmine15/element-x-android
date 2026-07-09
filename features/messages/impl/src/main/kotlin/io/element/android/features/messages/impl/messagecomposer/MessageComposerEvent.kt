@@ -30,6 +30,8 @@ sealed interface MessageComposerEvent {
         data object Poll : PickAttachmentSource
     }
 
+    data class ToggleEmojiPanel(val enabled: Boolean) : MessageComposerEvent
+    data class InsertEmoji(val unicode: String) : MessageComposerEvent
     data class ToggleTextFormatting(val enabled: Boolean) : MessageComposerEvent
     data class Error(val error: Throwable) : MessageComposerEvent
     data class TypingNotice(val isTyping: Boolean) : MessageComposerEvent
